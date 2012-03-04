@@ -80,9 +80,9 @@ function monkeypatch(that) {
         box.destroy();
     }
 
-    // now, we must ensure that our percentage label is updated
+    // now, we must ensure that our time label is updated
     // hence, create a function that enumerates the devices and, if a battery
-    // is found, updates the label with the percentage point
+    // is found, updates the label with the time remaining
     // (code heavily borrowed from ui.status.power)
     that._updateLabel = function updateLabel() {
         this._proxy.GetDevicesRemote(Lang.bind(this, function(devices, error) {
