@@ -87,14 +87,6 @@ function monkeypatch(that) {
     // is found, updates the label with the time remaining
     // (code heavily borrowed from ui.status.power)
     that._updateLabel = function updateLabel() {
-    
-/*    const St = imports.gi.St;
-//const Lang = imports.lang;
-const Status = imports.ui.status;
-const Panel = imports.ui.panel;
-//const Main = imports.ui.main;
-*/
-
         this._proxy.GetDevicesRemote(Lang.bind(this, function(devices, error) {
             if (error) {
                 if (this._withLabel) {
@@ -108,7 +100,7 @@ const Panel = imports.ui.panel;
             // Hence, instead of using GetPrimaryDevice, we enumerate all
             // devices, and then either pick the primary if found or fallback
             // on the first battery found
-            let firstMatch, bestMatch, stato;
+            let firstMatch, bestMatch, charging;
             for (let i = 0; i < devices.length; i++) {
                 let [device_id, device_type, icon, percentage, state, seconds] = devices[i];
                 if (device_type != Status.power.UPDeviceType.BATTERY)
@@ -119,7 +111,8 @@ const Panel = imports.ui.panel;
                     
                     if (state == '1' && show_on_charge)
                         charging = decodeURIComponent( escape( '↑ ' ) );
-
+                    else
+                        charging = ' ';
                     // the primary is preferred, no reason to keep searching
                     break;
                 }
@@ -129,6 +122,8 @@ const Panel = imports.ui.panel;
 
                     if (state == '1' && show_on_charge)
                         charging = decodeURIComponent( escape( '↑ ' ) );
+                    else
+                        charging = ' ';
                 }
             }
 
