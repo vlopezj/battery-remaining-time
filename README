@@ -11,6 +11,11 @@ while), by mail to
                         dadexix86@gmail.com
 
 
+There is a possiblity to add an arrow up near the icon and the time.
+To do so, edit the extension.js file and set to true the variable
+        let show_on_charge
+on line 30.
+
 
 This extension for gnome-shell is based on the battery-percentage-indicator
 extension by paravoid, that can be found here
