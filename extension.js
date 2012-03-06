@@ -27,13 +27,15 @@ const Status = imports.ui.status;
 const Panel = imports.ui.panel;
 const Main = imports.ui.main;
 
+let show_on_charge = true;
+
 function init(meta) {
     // empty
 }
 
 function monkeypatch(that) {
     // add a method to the original power indicator that replaces the single
-    // icon with the combo icon/label; this is dynamically called the first time
+    // icon with the combo icon/label(s); this is dynamically called the first time
     // a battery is found in the _updateLabel() method
     that._replaceIconWithBox = function replaceIconWithBox() {
         if (this._withLabel)
@@ -85,6 +87,14 @@ function monkeypatch(that) {
     // is found, updates the label with the time remaining
     // (code heavily borrowed from ui.status.power)
     that._updateLabel = function updateLabel() {
+    
+/*    const St = imports.gi.St;
+//const Lang = imports.lang;
+const Status = imports.ui.status;
+const Panel = imports.ui.panel;
+//const Main = imports.ui.main;
+*/
+
         this._proxy.GetDevicesRemote(Lang.bind(this, function(devices, error) {
             if (error) {
                 if (this._withLabel) {
@@ -98,7 +108,7 @@ function monkeypatch(that) {
             // Hence, instead of using GetPrimaryDevice, we enumerate all
             // devices, and then either pick the primary if found or fallback
             // on the first battery found
-            let firstMatch, bestMatch;
+            let firstMatch, bestMatch, stato;
             for (let i = 0; i < devices.length; i++) {
                 let [device_id, device_type, icon, percentage, state, seconds] = devices[i];
                 if (device_type != Status.power.UPDeviceType.BATTERY)
@@ -106,12 +116,20 @@ function monkeypatch(that) {
 
                 if (device_id == this._primaryDeviceId) {
                     bestMatch = seconds;
+                    
+                    if (state == '1' && show_on_charge)
+                        charging = decodeURIComponent( escape( '↑ ' ) );
+
                     // the primary is preferred, no reason to keep searching
                     break;
                 }
 
-                if (!firstMatch)
+                if (!firstMatch){
                     firstMatch = seconds;
+
+                    if (state == '1' && show_on_charge)
+                        charging = decodeURIComponent( escape( '↑ ' ) );
+                }
             }
 
             // if there was no primary device, just pick the first
@@ -129,7 +147,7 @@ function monkeypatch(that) {
                     this.timeString = '-- ';
                 }
                 
-                displayString = this.timeString;
+                displayString = charging.toString() + this.timeString;
                 
                 if (!this._withLabel) {
                     this._replaceIconWithBox();
