@@ -27,17 +27,18 @@ const Status = imports.ui.status;
 const Panel = imports.ui.panel;
 const Main = imports.ui.main;
 
-let show_on_charge = true;
+let showArrowOnCharge = false;
+let showOnCharge = true;
 
 function init(meta) {
     // empty
 }
 
-function monkeypatch(that) {
+function monkeypatch(batteryArea) {
     // add a method to the original power indicator that replaces the single
     // icon with the combo icon/label(s); this is dynamically called the first time
     // a battery is found in the _updateLabel() method
-    that._replaceIconWithBox = function replaceIconWithBox() {
+    batteryArea._replaceIconWithBox = function replaceIconWithBox() {
         if (this._withLabel)
             return;
         this._withLabel = true;
@@ -64,7 +65,7 @@ function monkeypatch(that) {
     // do the exact opposite: replace the box with the original icon and
     // destroy the bin/box. i.e. revert the original behavior, useful
     // when disabling the extension :-)
-    that._replaceBoxWithIcon = function replaceBoxWithIcon() {
+    batteryArea._replaceBoxWithIcon = function replaceBoxWithIcon() {
         if (!this._withLabel)
             return;
         this._withLabel = false;
@@ -86,7 +87,7 @@ function monkeypatch(that) {
     // hence, create a function that enumerates the devices and, if a battery
     // is found, updates the label with the time remaining
     // (code heavily borrowed from ui.status.power)
-    that._updateLabel = function updateLabel() {
+    batteryArea._updateLabel = function updateLabel() {
         this._proxy.GetDevicesRemote(Lang.bind(this, function(devices, error) {
             if (error) {
                 if (this._withLabel) {
@@ -106,24 +107,16 @@ function monkeypatch(that) {
                 if (device_type != Status.power.UPDeviceType.BATTERY)
                     continue;
 
+                charging = state;
+
                 if (device_id == this._primaryDeviceId) {
                     bestMatch = seconds;
-                    
-                    if (state == '1' && show_on_charge)
-                        charging = decodeURIComponent( escape( '↑ ' ) );
-                    else
-                        charging = ' ';
                     // the primary is preferred, no reason to keep searching
                     break;
                 }
 
                 if (!firstMatch){
                     firstMatch = seconds;
-
-                    if (state == '1' && show_on_charge)
-                        charging = decodeURIComponent( escape( '↑ ' ) );
-                    else
-                        charging = ' ';
                 }
             }
 
@@ -142,8 +135,20 @@ function monkeypatch(that) {
                     this.timeString = '-- ';
                 }
                 
-                displayString = charging.toString() + this.timeString;
-                
+                if (charging == '1'){
+                    if (showArrowOnCharge)
+                        displayString = decodeURIComponent(escape('↑ ')).toString() + this.timeString;
+                    else
+                        displaystring = ' '.toString() + this.timeString;
+                            
+                    if(!showOnCharge)
+                        hideBattery();
+                    else
+                        showBattery();
+                } else {
+                    displayString = ' '.toString() + this.timeString;
+                }
+
                 if (!this._withLabel) {
                     this._replaceIconWithBox();
                 }
@@ -158,35 +163,62 @@ function monkeypatch(that) {
     };
 }
 
+function hideBattery() {
+    for (var i = 0; i < Main.panel._rightBox.get_children().length; i++) {
+            if (Main.panel._statusArea['battery'] == 
+            Main.panel._rightBox.get_children()[i]._delegate ||
+            Main.panel._statusArea['batteryBox'] == 
+            Main.panel._rightBox.get_children()[i]._delegate) {
+            global.log("Battery Remaing Time: hiding battery.");
+            Main.panel._rightBox.get_children()[i].hide();
+            break;
+        }
+    }
+}
+
+function showBattery() {
+    for (var i = 0; i < Main.panel._rightBox.get_children().length; i++) {
+            if (Main.panel._statusArea['battery'] == 
+            Main.panel._rightBox.get_children()[i]._delegate ||
+            Main.panel._statusArea['batteryBox'] == 
+            Main.panel._rightBox.get_children()[i]._delegate) {
+//            global.log("SHOW:" + 'battery');
+            Main.panel._rightBox.get_children()[i].show();
+            break;
+        }
+    }
+}
+
 function enable() {
-    // monkey-patch the existing battery icon, called "that" henceforth
-    let that = Main.panel._statusArea['battery'];
-    if (!that)
+    // monkey-patch the existing battery icon, called "batteryArea" henceforth
+    let batteryArea = Main.panel._statusArea['battery'];
+    if (!batteryArea)
         return;
 
-    monkeypatch(that);
+    monkeypatch(batteryArea);
 
     // hook our extension to the signal and do the initial update
-    that._labelSignalId = that._proxy.connect('Changed', Lang.bind(that, that._updateLabel));
-    that._updateLabel();
+    batteryArea._labelSignalId = batteryArea._proxy.connect('Changed', Lang.bind(batteryArea, batteryArea._updateLabel));
+    batteryArea._updateLabel();
 }
 
 function disable() {
-    let that = Main.panel._statusArea['battery'];
-    if (!that)
+    let batteryArea = Main.panel._statusArea['battery'];
+    if (!batteryArea)
         return;
 
     try {
-        if (that._labelSignalId) {
-            that._proxy.disconnect(that._labelSignalId);
+        if (batteryArea._labelSignalId) {
+            batteryArea._proxy.disconnect(batteryArea._labelSignalId);
         }
-        that._replaceBoxWithIcon();
+        batteryArea._replaceBoxWithIcon();
     } finally {
-        delete that._replaceIconWithBox;
-        delete that._replaceBoxWithIcon;
-        delete that._updateLabel;
-        delete that._labelSignalId;
-        delete that._label;
-        delete that._withLabel;
+        delete batteryArea._replaceIconWithBox;
+        delete batteryArea._replaceBoxWithIcon;
+        delete batteryArea._updateLabel;
+        delete batteryArea._labelSignalId;
+        delete batteryArea._label;
+        delete batteryArea._withLabel;
     }
 }
+
