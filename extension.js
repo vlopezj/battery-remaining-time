@@ -27,7 +27,8 @@ const Status = imports.ui.status;
 const Panel = imports.ui.panel;
 const Main = imports.ui.main;
 
-let showArrowOnCharge = false;
+let showArrowOnCharge = true;
+let showPercentage = true;
 let showOnCharge = true;
 
 function init(meta) {
@@ -101,13 +102,16 @@ function monkeypatch(batteryArea) {
             // Hence, instead of using GetPrimaryDevice, we enumerate all
             // devices, and then either pick the primary if found or fallback
             // on the first battery found
-            let firstMatch, bestMatch, charging;
+            let firstMatch, bestMatch, charging, percent, arrow, perc;
+            
             for (let i = 0; i < devices.length; i++) {
                 let [device_id, device_type, icon, percentage, state, seconds] = devices[i];
                 if (device_type != Status.power.UPDeviceType.BATTERY)
                     continue;
 
                 charging = state;
+                
+                percent = percentage;
 
                 if (device_id == this._primaryDeviceId) {
                     bestMatch = seconds;
@@ -135,18 +139,29 @@ function monkeypatch(batteryArea) {
                     this.timeString = '-- ';
                 }
                 
+                let arrow;
+                
+                if (showArrowOnCharge)
+                    arrow = decodeURIComponent(escape('↑ ')).toString();
+                else
+                    arrow = ' ';
+                
                 if (charging == '1'){
-                    if (showArrowOnCharge)
-                        displayString = decodeURIComponent(escape('↑ ')).toString() + this.timeString;
+                    if (showPercentage)
+                        displayString = arrow + Math.round(percent).toString()  + '% (' + this.timeString + ')';
                     else
-                        displaystring = ' '.toString() + this.timeString;
-                            
+                        displayString = arrow  + this.timeString;
+                        
                     if(!showOnCharge)
                         hideBattery();
                     else
                         showBattery();
                 } else {
-                    displayString = ' '.toString() + this.timeString;
+                    //global.log("Battery NOT in charge");
+                    if (showPercentage)
+                        displayString = ' ' + Math.round(percent).toString()  + '% (' + this.timeString + ')';
+                    else
+                        displayString = ' ' + this.timeString;
                 }
 
                 if (!this._withLabel) {
