@@ -27,9 +27,10 @@ const Status = imports.ui.status;
 const Panel = imports.ui.panel;
 const Main = imports.ui.main;
 
-let showArrowOnCharge = true;
-let showPercentage = true;
-let showOnCharge = true;
+let showArrowOnCharge = true;   //show an arrow up when charging
+let showPercentage = true;      //show percentage near time
+let showOnCharge = true;        //show the battery when charging
+let showOnFull = true;          //show the battery when full charged
 
 function init(meta) {
     // empty
@@ -146,11 +147,16 @@ function monkeypatch(batteryArea) {
                 else
                     arrow = ' ';
                 
+                if (!showOnFull && Math.round(percent) == 100)
+                    hideBattery();
+                else
+                    showBattery();
+                
                 if (charging == '1'){
                     if (showPercentage)
-                        displayString = arrow + Math.round(percent).toString()  + '% (' + this.timeString + ')';
+                        displayString = arrow + Math.round(percent).toString() + '% (' + this.timeString + ')';
                     else
-                        displayString = arrow  + this.timeString;
+                        displayString = arrow + this.timeString;
                         
                     if(!showOnCharge)
                         hideBattery();
@@ -159,7 +165,7 @@ function monkeypatch(batteryArea) {
                 } else {
                     //global.log("Battery NOT in charge");
                     if (showPercentage)
-                        displayString = ' ' + Math.round(percent).toString()  + '% (' + this.timeString + ')';
+                        displayString = ' ' + Math.round(percent).toString() + '% (' + this.timeString + ')';
                     else
                         displayString = ' ' + this.timeString;
                 }
