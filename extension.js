@@ -109,6 +109,8 @@ function monkeypatch(batteryArea) {
                 let [device_id, device_type, icon, percentage, state, seconds] = devices[i];
                 if (device_type != Status.power.UPDeviceType.BATTERY)
                     continue;
+                    
+                //global.log(devices[i]);
 
                 charging = state;
                 
@@ -120,77 +122,78 @@ function monkeypatch(batteryArea) {
                     break;
                 }
 
-                if (!firstMatch){
+                if (!firstMatch)
                     firstMatch = seconds;
-                }
             }
 
             // if there was no primary device, just pick the first
             if (!bestMatch)
                 bestMatch = firstMatch;
 
-            if (bestMatch) {
-                let displayString;
-                if (bestMatch > 60){
-                    let time = Math.round(bestMatch / 60);
-                    let minutes = time % 60;
-                    let hours = Math.floor(time / 60);
-                    this.timeString = C_("battery time remaining","%d:%02d").format(hours,minutes);
-                } else {
-                    this.timeString = '-- ';
-                }
-                
-                let arrow;
-                
-                if (showArrowOnCharge)
-                    arrow = decodeURIComponent(escape('↑ ')).toString();
-                else
-                    arrow = ' ';
-                
-                if (!showOnFull && Math.round(percent) == 100)
+            let displayString;
+            if (bestMatch > 60){
+                let time = Math.round(bestMatch / 60);
+                let minutes = time % 60;
+                let hours = Math.floor(time / 60);
+                this.timeString = C_("battery time remaining","%d:%02d").format(hours,minutes);
+            } else {
+                this.timeString = '-- ';
+            }
+             
+            let arrow;
+
+            if (showArrowOnCharge)
+                arrow = decodeURIComponent(escape('↑ ')).toString();
+            else
+                arrow = ' ';
+
+            if (charging == '1'){
+                if(!showOnCharge)
                     hideBattery();
-                else
-                    showBattery();
-                
-                if (charging == '1'){
+                else{
                     if (showPercentage)
                         displayString = arrow + Math.round(percent).toString() + '% (' + this.timeString + ')';
                     else
                         displayString = arrow + this.timeString;
-                        
-                    if(!showOnCharge)
+                    showBattery();
+                }
+            } else {
+                if (charging == '4'){
+                    if (!showOnFull)
                         hideBattery();
-                    else
+                    else {
+                        this.timeString = decodeURIComponent(escape('∞'));
+
+                        if (showPercentage)
+                            displayString = '100% (' + this.timeString + ')';
+                        else
+                            displayString = ' ' + this.timeString;
                         showBattery();
+                    }
                 } else {
-                    //global.log("Battery NOT in charge");
                     if (showPercentage)
                         displayString = ' ' + Math.round(percent).toString() + '% (' + this.timeString + ')';
                     else
                         displayString = ' ' + this.timeString;
                 }
-
-                if (!this._withLabel) {
-                    this._replaceIconWithBox();
-                }
-                
-                this._label.set_text(displayString);
-                
-            } else {
-                // no battery found... hot-unplugged?
-                this._label.set_text("");
             }
+
+            if (!this._withLabel) {
+                this._replaceIconWithBox();
+            }
+            
+            this._label.set_text(displayString);
         }));
     };
 }
 
 function hideBattery() {
     for (var i = 0; i < Main.panel._rightBox.get_children().length; i++) {
-            if (Main.panel._statusArea['battery'] == 
+        if (Main.panel._statusArea['battery'] == 
             Main.panel._rightBox.get_children()[i]._delegate ||
             Main.panel._statusArea['batteryBox'] == 
             Main.panel._rightBox.get_children()[i]._delegate) {
-            global.log("Battery Remaing Time: hiding battery.");
+            //global.log("Battery Remaing Time: hiding battery.");
             Main.panel._rightBox.get_children()[i].hide();
             break;
         }
@@ -199,11 +202,11 @@ function hideBattery() {
 
 function showBattery() {
     for (var i = 0; i < Main.panel._rightBox.get_children().length; i++) {
-            if (Main.panel._statusArea['battery'] == 
+        if (Main.panel._statusArea['battery'] == 
             Main.panel._rightBox.get_children()[i]._delegate ||
             Main.panel._statusArea['batteryBox'] == 
             Main.panel._rightBox.get_children()[i]._delegate) {
-//            global.log("SHOW:" + 'battery');
+            //global.log("Battery Remaing Time: hiding battery.");
             Main.panel._rightBox.get_children()[i].show();
             break;
         }
@@ -213,8 +216,10 @@ function showBattery() {
 function enable() {
     // monkey-patch the existing battery icon, called "batteryArea" henceforth
     let batteryArea = Main.panel._statusArea['battery'];
-    if (!batteryArea)
+    if (!batteryArea){
+        //global.log("No battery Area!");
         return;
+    }
 
     monkeypatch(batteryArea);
 
@@ -225,8 +230,9 @@ function enable() {
 
 function disable() {
     let batteryArea = Main.panel._statusArea['battery'];
-    if (!batteryArea)
+    if (!batteryArea){
         return;
+    }
 
     try {
         if (batteryArea._labelSignalId) {
