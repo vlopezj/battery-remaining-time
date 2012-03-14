@@ -35,6 +35,11 @@ To do so, edit the extension.js file and set to false the variable
         showOnFull
 on line 33.
 
+There is the possiblity to hide at all the battery icon and show just the time.
+To do so, edit the extension.js file and set to false the variable
+        showIcon
+on line 34.
+
 *Credits*
 This extension for gnome-shell is based on the battery-percentage-indicator
 extension by paravoid, that can be found here

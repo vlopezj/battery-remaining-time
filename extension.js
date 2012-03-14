@@ -31,6 +31,7 @@ let showArrowOnCharge = true;   //show an arrow up when charging
 let showPercentage = true;      //show percentage near time
 let showOnCharge = true;        //show the battery when charging
 let showOnFull = true;          //show the battery when full charged
+let showIcon = true;            //show the icon
 
 function init(meta) {
     // empty
@@ -54,14 +55,16 @@ function monkeypatch(batteryArea) {
         let box = new St.BoxLayout({ name: 'batteryBox' });
         this.actor.add_actor(box);
 
-        let iconBox = new St.Bin();
-        box.add(iconBox, { y_align: St.Align.MIDDLE, y_fill: false });
+        // create the bin and eventually put the original icon into it
+        if (showIcon) {
+            let iconBox = new St.Bin();
+            box.add(iconBox, { y_align: St.Align.MIDDLE, y_fill: false });
+            iconBox.child = icon;
+        }
 
         this._label = new St.Label();
         box.add(this._label, { y_align: St.Align.MIDDLE, y_fill: false });
 
-        // finally, put the original icon into the bin
-        iconBox.child = icon;
     };
 
     // do the exact opposite: replace the box with the original icon and
