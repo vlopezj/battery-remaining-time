@@ -1,6 +1,9 @@
 /*
+ * Gnome Shell Extension: battery-remaining-time
+ *
  * Copyright © 2012 Davide Alberelli <dadexix86@gmail.com>
- * Based on the works by Faidon Liambotis <paravoid@debian.org>
+ * 
+ * Some code is borrowed from http://blog.mecheye.net/
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +22,15 @@
  * same terms that the “gnome-shell” or “gnome-shell-extensions” software
  * packages are being distributed by The GNOME Project.
  *
+ * Important note: there are is a big difference in how metadata are managed
+ * from 3.2 to 3.4 version of the shell.
+ * Please have a look at 
+ *      http://blog.mecheye.net/2012/02/more-extension-api-breaks/
+ * for more informations.
+ *
+ *
+ *    The different lines are marked with a comment saying that's for 3.4.
+ *
  */
 
 const St = imports.gi.St;
@@ -27,14 +39,33 @@ const Status = imports.ui.status;
 const Panel = imports.ui.panel;
 const Main = imports.ui.main;
 
-let showArrowOnCharge = true;   //show an arrow up when charging
-let showPercentage = true;      //show percentage near time
-let showOnCharge = true;        //show the battery when charging
-let showOnFull = true;          //show the battery when full charged
-let showIcon = true;            //show the icon
+//const Gio = imports.gi.Gio;     // 3.4
+//let Me = imports.misc.extensionUtils.getCurrentExtension(); // 3.4
+//let Convenience = Me.imports.convenience; // 3.4
 
-function init(meta) {
-    // empty
+//Gio.app_info_launch_default_for_uri(Me.dir.get_uri(), global.create_app_launch_context()); // 3.4
+
+//let metadata = Me.metadata; // 3.4
+//Gio.app_info_launch_default_for_uri(metadata.url, global.create_app_launch_context()); // 3.4
+
+/*
+let settings = Convenience.getSettings(Me);
+
+let showIcon = settings.get_boolean('show-icon');                       //show the icon
+let showArrowOnCharge = settings.get_boolean('show-arrow-on-charge');   //show an arrow up when charging
+let showPercentage = settings.get_boolean('show-percentage');           //show percentage near time
+let showOnCharge = settings.get_boolean('show-on-charge');              //show the battery when charging
+let showOnFull = settings.get_boolean('show-on-full');                  //show the battery when full charged
+*/
+
+let showIcon = true;
+let showArrowOnCharge = true;
+let showPercentage = true;
+let showOnCharge = true;
+let showOnFull = true;
+
+
+function init() {
 }
 
 function monkeypatch(batteryArea) {
@@ -106,36 +137,35 @@ function monkeypatch(batteryArea) {
             // Hence, instead of using GetPrimaryDevice, we enumerate all
             // devices, and then either pick the primary if found or fallback
             // on the first battery found
-            let firstMatch, bestMatch, charging, percent, arrow, perc;
+            let results, firstMatch, bestMatch, charging, percent, arrow, perc;
             
-            for (let i = 0; i < devices.length; i++) {
-                let [device_id, device_type, icon, percentage, state, seconds] = devices[i];
+            [results]=devices;
+            
+            for (let i = 0; i < results.length; i++) {
+                let [device_id, device_type, icon, percent, charging, seconds] = results[i];
                 if (device_type != Status.power.UPDeviceType.BATTERY)
                     continue;
-                    
-                //global.log(devices[i]);
-
-                charging = state;
-                
-                percent = percentage;
 
                 if (device_id == this._primaryDeviceId) {
-                    bestMatch = seconds;
+                    bestMatch = [seconds,Math.floor(percent),charging];
                     // the primary is preferred, no reason to keep searching
                     break;
                 }
 
                 if (!firstMatch)
-                    firstMatch = seconds;
+                    firstMatch = [seconds,Math.floor(percent),charging];
             }
 
             // if there was no primary device, just pick the first
             if (!bestMatch)
                 bestMatch = firstMatch;
-
-            let displayString;
-            if (bestMatch > 60){
-                let time = Math.round(bestMatch / 60);
+            
+            //global.log("bestMatch:" + bestMatch.toString());
+            
+            this.displayString = ' ';
+            
+            if (bestMatch[0] > 60){
+                let time = Math.round(bestMatch[0] / 60);
                 let minutes = time % 60;
                 let hours = Math.floor(time / 60);
                 this.timeString = C_("battery time remaining","%d:%02d").format(hours,minutes);
@@ -150,42 +180,44 @@ function monkeypatch(batteryArea) {
             else
                 arrow = ' ';
 
-            if (charging == '1'){
+            if (bestMatch[2] == 1){
                 if(!showOnCharge)
                     hideBattery();
                 else{
                     if (showPercentage)
-                        displayString = arrow + Math.round(percent).toString() + '% (' + this.timeString + ')';
+                        this.displayString = arrow + bestMatch[1].toString() + '% (' + this.timeString + ')';
                     else
-                        displayString = arrow + this.timeString;
+                        this.displayString = arrow + this.timeString;
                     showBattery();
                 }
             } else {
-                if (charging == '4'){
+                if (bestMatch[2] == 4){
                     if (!showOnFull)
                         hideBattery();
                     else {
                         this.timeString = decodeURIComponent(escape('∞'));
 
                         if (showPercentage)
-                            displayString = '100% (' + this.timeString + ')';
+                            this.displayString = '100% (' + this.timeString + ')';
                         else
-                            displayString = ' ' + this.timeString;
+                            this.displayString = ' ' + this.timeString;
                         showBattery();
                     }
                 } else {
                     if (showPercentage)
-                        displayString = ' ' + Math.round(percent).toString() + '% (' + this.timeString + ')';
+                        this.displayString = ' ' + bestMatch[1].toString() + '% (' + this.timeString + ')';
                     else
-                        displayString = ' ' + this.timeString;
+                        this.displayString = ' ' + this.timeString;
                 }
             }
+
+            //global.log("displayString:" + this.displayString.toString());
 
             if (!this._withLabel) {
                 this._replaceIconWithBox();
             }
             
-            this._label.set_text(displayString);
+            this._label.set_text(this.displayString);
         }));
     };
 }
@@ -227,7 +259,7 @@ function enable() {
     monkeypatch(batteryArea);
 
     // hook our extension to the signal and do the initial update
-    batteryArea._labelSignalId = batteryArea._proxy.connect('Changed', Lang.bind(batteryArea, batteryArea._updateLabel));
+    batteryArea._labelSignalId = batteryArea._proxy.connect('g-properties-changed', Lang.bind(batteryArea, batteryArea._updateLabel));
     batteryArea._updateLabel();
 }
 
