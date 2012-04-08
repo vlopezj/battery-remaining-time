@@ -2,8 +2,6 @@
  * Gnome Shell Extension: battery-remaining-time
  *
  * Copyright © 2012 Davide Alberelli <dadexix86@gmail.com>
- * 
- * Some code is borrowed from http://blog.mecheye.net/
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,15 +20,6 @@
  * same terms that the “gnome-shell” or “gnome-shell-extensions” software
  * packages are being distributed by The GNOME Project.
  *
- * Important note: there are is a big difference in how metadata are managed
- * from 3.2 to 3.4 version of the shell.
- * Please have a look at 
- *      http://blog.mecheye.net/2012/02/more-extension-api-breaks/
- * for more informations.
- *
- *
- *    The different lines are marked with a comment saying that's for 3.4.
- *
  */
 
 const St = imports.gi.St;
@@ -39,36 +28,17 @@ const Status = imports.ui.status;
 const Panel = imports.ui.panel;
 const Main = imports.ui.main;
 
-//const Gio = imports.gi.Gio;     // 3.4
-//let Me = imports.misc.extensionUtils.getCurrentExtension(); // 3.4
-//let Convenience = Me.imports.convenience; // 3.4
-
-//Gio.app_info_launch_default_for_uri(Me.dir.get_uri(), global.create_app_launch_context()); // 3.4
-
-//let metadata = Me.metadata; // 3.4
-//Gio.app_info_launch_default_for_uri(metadata.url, global.create_app_launch_context()); // 3.4
-
-/*
-let settings = Convenience.getSettings(Me);
-
-let showIcon = settings.get_boolean('show-icon');                       //show the icon
-let showArrowOnCharge = settings.get_boolean('show-arrow-on-charge');   //show an arrow up when charging
-let showPercentage = settings.get_boolean('show-percentage');           //show percentage near time
-let showOnCharge = settings.get_boolean('show-on-charge');              //show the battery when charging
-let showOnFull = settings.get_boolean('show-on-full');                  //show the battery when full charged
-*/
-
 let showIcon = true;
 let showArrowOnCharge = true;
 let showPercentage = true;
 let showOnCharge = true;
 let showOnFull = true;
 
-
 function init() {
 }
 
 function monkeypatch(batteryArea) {
+
     // add a method to the original power indicator that replaces the single
     // icon with the combo icon/label(s); this is dynamically called the first time
     // a battery is found in the _updateLabel() method
