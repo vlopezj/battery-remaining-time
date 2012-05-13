@@ -1,6 +1,7 @@
 /*
+ * Gnome Shell Extension: battery-remaining-time
+ *
  * Copyright © 2012 Davide Alberelli <dadexix86@gmail.com>
- * Based on the works by Faidon Liambotis <paravoid@debian.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,21 +27,41 @@ const Lang = imports.lang;
 const Status = imports.ui.status;
 const Panel = imports.ui.panel;
 const Main = imports.ui.main;
+const Myself = imports.misc.extensionUtils.getCurrentExtension();
+const Convenience = Myself.imports.convenience;
 
-let showArrowOnCharge = true;   //show an arrow up when charging
-let showPercentage = true;      //show percentage near time
-let showOnCharge = true;        //show the battery when charging
-let showOnFull = true;          //show the battery when full charged
-let showIcon = true;            //show the icon
-
-function init(meta) {
-    // empty
+function init() {
 }
 
+const SETTING_SHOW_ICON='showicon';
+const SETTING_SHOW_ARROW_ON_CHARGE='showarrowoncharge';
+const SETTING_SHOW_PERCENTAGE='showpercentage';
+const SETTING_SHOW_ON_CHARGE='showoncharge';
+const SETTING_SHOW_ON_FULL='showonfull';
+const SETTING_DEBUG='debug';
+
+let settings = Convenience.getSettings('org.gnome.shell.extensions.battery-remaining-time');
+let debug = Convenience.getSettings().get_boolean(SETTING_DEBUG);
+
 function monkeypatch(batteryArea) {
+
     // add a method to the original power indicator that replaces the single
     // icon with the combo icon/label(s); this is dynamically called the first time
     // a battery is found in the _updateLabel() method
+    
+    let showIcon, showArrowOnCharge, showPercentage, showOnCharge, showOnFull;
+    
+    batteryArea._setParameters = function setParameters(){
+        if (debug){
+            global.log("Updating parameters");
+        }
+        showIcon = Convenience.getSettings().get_boolean(SETTING_SHOW_ICON);
+        showArrowOnCharge = Convenience.getSettings().get_boolean(SETTING_SHOW_ARROW_ON_CHARGE);
+        showPercentage = Convenience.getSettings().get_boolean(SETTING_SHOW_PERCENTAGE);
+        showOnCharge = Convenience.getSettings().get_boolean(SETTING_SHOW_ON_CHARGE);
+        showOnFull = Convenience.getSettings().get_boolean(SETTING_SHOW_ON_FULL);
+    }
+    
     batteryArea._replaceIconWithBox = function replaceIconWithBox() {
         if (this._withLabel)
             return;
@@ -56,10 +77,10 @@ function monkeypatch(batteryArea) {
         this.actor.add_actor(box);
 
         // create the bin and eventually put the original icon into it
+        let iconBox = new St.Bin();
+        iconBox.child = icon;
         if (showIcon) {
-            let iconBox = new St.Bin();
             box.add(iconBox, { y_align: St.Align.MIDDLE, y_fill: false });
-            iconBox.child = icon;
         }
 
         this._label = new St.Label();
@@ -87,11 +108,10 @@ function monkeypatch(batteryArea) {
         bin.destroy();
         box.destroy();
     }
-
+    
     // now, we must ensure that our time label is updated
-    // hence, create a function that enumerates the devices and, if a battery
-    // is found, updates the label with the time remaining
-    // (code heavily borrowed from ui.status.power)
+    // hence, create a function that enumerates the devices and, if one or more
+    // batteries are found, updates the label with the time remaining
     batteryArea._updateLabel = function updateLabel() {
         this._proxy.GetDevicesRemote(Lang.bind(this, function(devices, error) {
             if (error) {
@@ -101,41 +121,46 @@ function monkeypatch(batteryArea) {
                 return;
             }
 
-            // for some peculiar reason, there isn't always a primary device,
-            // even on simple laptop configurations with a single battery.
-            // Hence, instead of using GetPrimaryDevice, we enumerate all
-            // devices, and then either pick the primary if found or fallback
-            // on the first battery found
-            let firstMatch, bestMatch, charging, percent, arrow, perc;
+            let results, totalMatch, totalTime, totalPercentage, totalCharging, arrow;
             
-            for (let i = 0; i < devices.length; i++) {
-                let [device_id, device_type, icon, percentage, state, seconds] = devices[i];
+            batteryArea._setParameters();
+            batteryArea._replaceIconWithBox();
+            
+            [results]=devices;
+            
+            for (let i = 0; i < results.length; i++) {
+                let [device_id, device_type, icon, percent, charging, seconds] = results[i];
                 if (device_type != Status.power.UPDeviceType.BATTERY)
                     continue;
-                    
-                //global.log(devices[i]);
 
-                charging = state;
-                
-                percent = percentage;
-
-                if (device_id == this._primaryDeviceId) {
-                    bestMatch = seconds;
-                    // the primary is preferred, no reason to keep searching
-                    break;
+                if (!totalTime){
+                    totalTime = seconds;
+                    totalPercentage = Math.floor(percent);
+                    totalCharging = charging;
+                } else {// If there is more than one battery we sum up
+                    totalTime = totalTime + seconds;
+                    totalPercentage = totalPercentage/2 + percent/2;
+                    totalCharging = Math.min(totalCharging, charging);
+                    if (debug){
+                        global.log("The state for the battery " + i.toString() + " is" + charging.toString());
+                    }
                 }
 
-                if (!firstMatch)
-                    firstMatch = seconds;
+                totalMatch = [totalTime,totalPercentage,totalCharging];
+                if (debug){
+                    global.log("Intermediate totalMatch: " + totalMatch.toString());
+                }
+                
             }
 
-            // if there was no primary device, just pick the first
-            if (!bestMatch)
-                bestMatch = firstMatch;
-
-            let displayString;
-            if (bestMatch > 60){
-                let time = Math.round(bestMatch / 60);
+            if (debug){
+                global.log("Final totalMatch:" + totalMatch.toString());
+            }
+            
+            this.displayString = ' ';
+            
+            if (totalMatch[0] > 60){
+                let time = Math.round(totalMatch[0] / 60);
                 let minutes = time % 60;
                 let hours = Math.floor(time / 60);
                 this.timeString = C_("battery time remaining","%d:%02d").format(hours,minutes);
@@ -150,42 +175,46 @@ function monkeypatch(batteryArea) {
             else
                 arrow = ' ';
 
-            if (charging == '1'){
+            if (totalMatch[2] == 1){
                 if(!showOnCharge)
                     hideBattery();
                 else{
                     if (showPercentage)
-                        displayString = arrow + Math.round(percent).toString() + '% (' + this.timeString + ')';
+                        this.displayString = arrow + totalMatch[1].toString() + '% (' + this.timeString + ')';
                     else
-                        displayString = arrow + this.timeString;
+                        this.displayString = arrow + this.timeString;
                     showBattery();
                 }
             } else {
-                if (charging == '4'){
+                if (totalMatch[2] == 4){
                     if (!showOnFull)
                         hideBattery();
                     else {
                         this.timeString = decodeURIComponent(escape('∞'));
 
                         if (showPercentage)
-                            displayString = '100% (' + this.timeString + ')';
+                            this.displayString = '100% (' + this.timeString + ')';
                         else
-                            displayString = ' ' + this.timeString;
+                            this.displayString = ' ' + this.timeString;
                         showBattery();
                     }
                 } else {
                     if (showPercentage)
-                        displayString = ' ' + Math.round(percent).toString() + '% (' + this.timeString + ')';
+                        this.displayString = ' ' + totalMatch[1].toString() + '% (' + this.timeString + ')';
                     else
-                        displayString = ' ' + this.timeString;
+                        this.displayString = ' ' + this.timeString;
                 }
+            }
+            
+            if (debug){
+                global.log("displayString:" + this.displayString.toString());
             }
 
             if (!this._withLabel) {
                 this._replaceIconWithBox();
             }
             
-            this._label.set_text(displayString);
+            this._label.set_text(this.displayString);
         }));
     };
 }
@@ -196,7 +225,9 @@ function hideBattery() {
             Main.panel._rightBox.get_children()[i]._delegate ||
             Main.panel._statusArea['batteryBox'] == 
             Main.panel._rightBox.get_children()[i]._delegate) {
-            //global.log("Battery Remaing Time: hiding battery.");
+            if (debug){
+                global.log("Battery Remaing Time: hiding battery.");
+            }
             Main.panel._rightBox.get_children()[i].hide();
             break;
         }
@@ -209,7 +240,9 @@ function showBattery() {
             Main.panel._rightBox.get_children()[i]._delegate ||
             Main.panel._statusArea['batteryBox'] == 
             Main.panel._rightBox.get_children()[i]._delegate) {
-            //global.log("Battery Remaing Time: hiding battery.");
+            if (debug){
+                global.log("Battery Remaing Time: showing battery.");
+            }
             Main.panel._rightBox.get_children()[i].show();
             break;
         }
@@ -220,15 +253,18 @@ function enable() {
     // monkey-patch the existing battery icon, called "batteryArea" henceforth
     let batteryArea = Main.panel._statusArea['battery'];
     if (!batteryArea){
-        //global.log("No battery Area!");
+        if (debug){
+            global.log("No battery Area!");
+        }
         return;
     }
 
     monkeypatch(batteryArea);
 
     // hook our extension to the signal and do the initial update
-    batteryArea._labelSignalId = batteryArea._proxy.connect('Changed', Lang.bind(batteryArea, batteryArea._updateLabel));
-    batteryArea._updateLabel();
+    batteryArea._labelSignalId = batteryArea._proxy.connect('g-properties-changed', Lang.bind(batteryArea, batteryArea._updateLabel));
+    batteryArea._setParameters();
+    batteryArea._updateLabel();                 
 }
 
 function disable() {
