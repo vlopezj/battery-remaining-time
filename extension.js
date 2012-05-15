@@ -125,6 +125,7 @@ function monkeypatch(batteryArea) {
             
             batteryArea._setParameters();
             batteryArea._replaceIconWithBox();
+            totalTime = -1;
             
             [results]=devices;
             
@@ -133,16 +134,19 @@ function monkeypatch(batteryArea) {
                 if (device_type != Status.power.UPDeviceType.BATTERY)
                     continue;
 
-                if (!totalTime){
+                if (totalTime < 0){
                     totalTime = seconds;
                     totalPercentage = Math.floor(percent);
                     totalCharging = charging;
+                    if(debug){
+                        global.log("first battery");
+                    }
                 } else {// If there is more than one battery we sum up
                     totalTime = totalTime + seconds;
-                    totalPercentage = totalPercentage/2 + percent/2;
+                    totalPercentage = Math.floor(totalPercentage + Math.floor(percent))/2;
                     totalCharging = Math.min(totalCharging, charging);
-                    if (debug){
-                        global.log("The state for the battery " + i.toString() + " is" + charging.toString());
+                    if(debug){
+                        global.log("more than one battery");
                     }
                 }
 
@@ -285,6 +289,7 @@ function disable() {
         delete batteryArea._labelSignalId;
         delete batteryArea._label;
         delete batteryArea._withLabel;
+        delete batteryArea._setParameters;
     }
 }
 
