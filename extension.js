@@ -136,14 +136,14 @@ function monkeypatch(batteryArea) {
 
                 if (totalTime < 0){
                     totalTime = seconds;
-                    totalPercentage = Math.floor(percent);
+                    totalPercentage = Math.round(percent);
                     totalCharging = charging;
                     if(debug){
                         global.log("first battery");
                     }
                 } else {// If there is more than one battery we sum up
                     totalTime = totalTime + seconds;
-                    totalPercentage = Math.floor(totalPercentage + Math.floor(percent))/2;
+                    totalPercentage = Math.round((totalPercentage + percent)/2);
                     totalCharging = Math.min(totalCharging, charging);
                     if(debug){
                         global.log("more than one battery");
