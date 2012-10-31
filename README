@@ -1,5 +1,9 @@
 ######       Battery Remaining Time extension for gnome-shell          #######
 
+Copyright © 2012 by Christian Schubert <schubi@erlangen.ccc.de>
+
+primary written and transfered to me by Davide Alberelli <dadexix86@gmail.com>
+
 This extension show the time remaining of your battery near the icon. 
 It shows the time remaining to full discharge when unplugged and the time to 
 full charge when plugged to AC.
@@ -10,10 +14,9 @@ it works because my laptop has only one.
 There are other options available, look under here in *SETTINGS*
 
 Please report any bug and issue to 
-        https://github.com/dadexix86/battery-remaining-time/issues
-or, if you prefer (but it is possible that I don't read my email for a 
-while), by mail to
-                        dadexix86@gmail.com
+        https://github.com/Der-Schubi/battery-remaining-time/issues
+or, if you prefer by mail to
+                        schubi@erlangen.ccc.de
 
 *SETTINGS*
 All the settings are now update to gsettings and are 
@@ -42,9 +45,10 @@ This needs reload because some debug messages are shown before settings.
 
 
 *Credits*
-This extension for gnome-shell was once based on the battery-percentage-indicator
+This extension was primary written by Davide Alberelli and later transfered to me.
+It was once based on the battery-percentage-indicator
 extension by paravoid.
-In time I used a lot of code borrowed from some other extensions.
+In time a lot of code was borrowed from some other extensions.
 
 This is licensed under a GPL2, which was provided to you with the extension.
 If it wasn't, you can find it here

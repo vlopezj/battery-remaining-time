@@ -1,7 +1,11 @@
 /*
  * Gnome Shell Extension: battery-remaining-time
  *
- * Copyright © 2012 Davide Alberelli <dadexix86@gmail.com>
+ * Copyright © 2012 by
+ *         Christian Schubert <schubi@erlangen.ccc.de>
+ * 
+ * primary written and transfered to me by
+ *         Davide Alberelli <dadexix86@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
