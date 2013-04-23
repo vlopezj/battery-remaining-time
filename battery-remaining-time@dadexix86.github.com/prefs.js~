@@ -82,10 +82,6 @@ function init() {
       label: _("Show the icon. Needs reload."),
       help: _("Show or hide the icon near the text. (default: ON)")
     },
-    showbrackets: {
-      label: _("Show the brackets around the remaining time. Needs reload."),
-      help: _("Show or hide the brackets around the remaining time. (default: ON)")
-    },
     debug: {
       label: _("Debug mode. Needs reload."),
       help: _("Show or hide debug messages in Looking Glass. (default: OFF)")

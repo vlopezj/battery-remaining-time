@@ -28,8 +28,8 @@
     </key>
     <key type="b" name="showbrackets">
       <default>true</default>
-      <summary>Show/Hide brackets around the remaining time.</summary>
-      <description>Show or hide brackets around the remaining time. Set true or false.</description>
+      <summary>Show/Hide brackets around remaining time.</summary>
+      <description>Show or hide brackets around remaining time. Set true or false.</description>
     </key>
     <key type="b" name="debug">
       <default>false</default>
