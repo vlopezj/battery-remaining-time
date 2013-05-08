@@ -82,6 +82,10 @@ function init() {
       label: _("Show the icon. Needs reload."),
       help: _("Show or hide the icon near the text. (default: ON)")
     },
+    showtime: {
+      label: _("Show the remaining time. Needs reload."),
+      help: _("Show or hide the remaining time. (default: ON)")
+    },
     showbrackets: {
       label: _("Show the brackets around the remaining time. Needs reload."),
       help: _("Show or hide the brackets around the remaining time. (default: ON)")
