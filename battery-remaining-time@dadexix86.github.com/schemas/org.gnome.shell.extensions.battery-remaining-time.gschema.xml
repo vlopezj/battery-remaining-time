@@ -31,6 +31,11 @@
       <summary>Show/Hide brackets around the remaining time.</summary>
       <description>Show or hide brackets around the remaining time. Set true or false.</description>
     </key>
+    <key type="b" name="showtime">
+      <default>true</default>
+      <summary>Show/Hide the time.</summary>
+      <description>Show or hide charging/discharging time. Set true or false.</description>
+    </key>
     <key type="b" name="debug">
       <default>false</default>
       <summary>Show/Hide debug messages</summary>
