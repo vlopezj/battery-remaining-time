@@ -6,7 +6,8 @@
   "name": "Battery remaining time and percentage", 
   "settings-schema": "org.gnome.shell.extensions.battery-remaining-time", 
   "shell-version": [
-    "3.6"
+    "3.6",
+    "3.8"
   ], 
   "url": "https://github.com/Der-Schubi/battery-remaining-time", 
   "uuid": "battery-remaining-time@dadexix86.github.com" 
